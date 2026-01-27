@@ -50,9 +50,13 @@ $ anvil
 ```shell
 $ source .env
 
-$ forge script script/Counter.s.sol:CounterScript --rpc-url $MAINNET_RPC_URL --broadcast --verify -vvvv
-$ forge script script/Counter.s.sol:CounterScript --rpc-url $SEPOLIA_RPC_URL --broadcast --verify -vvvv
-$ forge script script/Counter.s.sol:CounterScript --rpc-url $HOODI_RPC_URL --broadcast --verify -vvvv
+$ forge script script/ERC5564Announcer.s.sol:ERC5564AnnouncerScript --rpc-url $MAINNET_RPC_URL --broadcast --verify -vvvv
+$ forge script script/ERC5564Announcer.s.sol:ERC5564AnnouncerScript --rpc-url $SEPOLIA_RPC_URL --broadcast --verify -vvvv
+$ forge script script/ERC5564Announcer.s.sol:ERC5564AnnouncerScript --rpc-url $HOODI_RPC_URL --broadcast --verify -vvvv
+
+$ forge script script/ERC5564AnnouncerWithHooks.s.sol:ERC5564AnnouncerWithHooksScript --rpc-url $MAINNET_RPC_URL --broadcast --verify -vvvv
+$ forge script script/ERC5564AnnouncerWithHooks.s.sol:ERC5564AnnouncerWithHooksScript --rpc-url $SEPOLIA_RPC_URL --broadcast --verify -vvvv
+$ forge script script/ERC5564AnnouncerWithHooks.s.sol:ERC5564AnnouncerWithHooksScript --rpc-url $HOODI_RPC_URL --broadcast --verify -vvvv
 ```
 
 ### Cast
