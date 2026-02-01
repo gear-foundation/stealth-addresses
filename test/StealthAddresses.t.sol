@@ -7,18 +7,26 @@ import {ChaChaRngOffchain} from "frost-secp256k1-evm/utils/cryptography/ChaChaRn
 import {Secp256k1} from "frost-secp256k1-evm/utils/cryptography/Secp256k1.sol";
 import {Secp256k1Arithmetic} from "frost-secp256k1-evm/utils/cryptography/Secp256k1Arithmetic.sol";
 import {ERC5564AnnouncerWithHooks} from "src/ERC5564AnnouncerWithHooks.sol";
+import {ERC6538Registry} from "src/ERC6538Registry.sol";
 import {IERC5564Announcer} from "src/IERC5564Announcer.sol";
+import {IERC6538Registry} from "src/IERC6538Registry.sol";
 import {StealthAddresses} from "src/StealthAddresses.sol";
 
 contract StealthAddressesTest is Test {
     address public sender;
+    address public recipient;
     address public newRecipient;
+    IERC6538Registry public erc6538Registry;
     IERC5564Announcer public erc5564Announcer;
 
     function setUp() public {
         sender = makeAddr("Sender");
+        recipient = makeAddr("Recipient");
         newRecipient = makeAddr("NewRecipient");
+
         vm.deal(sender, 1 ether);
+
+        erc6538Registry = new ERC6538Registry();
         erc5564Announcer = new ERC5564AnnouncerWithHooks();
     }
 
@@ -35,7 +43,13 @@ contract StealthAddressesTest is Test {
         console.logAddress(sender);
         console.log();
 
+        console.log("Recipient");
+        console.logAddress(recipient);
+        console.log();
+
         // Recipient has access to the private keys $p_{spend}$, $p_{view}$ from which public keys $P_{spend}$ and $P_{view}$ are derived.
+        console.log("Recipient generates keys...");
+        console.log();
 
         // $p_{spend}$
         uint256 spendPrivKey = ChaChaRngOffchain.randomNonZeroScalar();
@@ -78,6 +92,7 @@ contract StealthAddressesTest is Test {
         console.log();
 
         // Recipient has published a stealth meta-address that consists of the public keys $P_{spend}$ and $P_{view}$.
+        vm.startPrank(recipient);
 
         // `st:<chain>:0x<compressed spendPk><compressed viewPk>`
         // https://github.com/ethereum-lists/chains
@@ -87,17 +102,30 @@ contract StealthAddressesTest is Test {
         console.logBytes(stealthMetaAddress);
         console.log();
 
+        uint256 schemeId = 1;
+
+        vm.expectEmit(address(erc6538Registry));
+        emit IERC6538Registry.StealthMetaAddressSet(recipient, schemeId, stealthMetaAddress);
+
+        erc6538Registry.registerKeys(schemeId, stealthMetaAddress);
+
+        vm.stopPrank();
+
         // Generate a random 32-byte entropy ephemeral private key $p_{ephemeral}$
+        console.log("Sender generates keys...");
+        console.log();
+
         uint256 ephemeralPrivKey = ChaChaRngOffchain.randomNonZeroScalar();
         console.log("Ephemeral Private Key:");
         console.logBytes32(bytes32(ephemeralPrivKey));
         console.log();
 
         // Sender passes the stealth meta-address to the `generateStealthAddress` function.
+        stealthMetaAddress = erc6538Registry.stealthMetaAddressOf(recipient, schemeId);
         (address stealthAddress, bytes memory ephemeralPubKey, bytes1 viewTag) =
             StealthAddresses.generateStealthAddress(ephemeralPrivKey, stealthMetaAddress);
 
-        vm.label(stealthAddress, "Recipient");
+        vm.label(stealthAddress, "Recipient's stealth address");
 
         console.log("Stealth Address:");
         console.logAddress(stealthAddress);
@@ -111,7 +139,6 @@ contract StealthAddressesTest is Test {
         console.logBytes1(viewTag);
         console.log();
 
-        uint256 schemeId = 1;
         bytes memory metadata = abi.encodePacked(viewTag);
 
         vm.startPrank(sender);
@@ -156,6 +183,4 @@ contract StealthAddressesTest is Test {
         assertEq(newRecipient.balance, 1 ether);
         assertEq(stealthAddress.balance, 0 ether);
     }
-
-    receive() external payable {}
 }
